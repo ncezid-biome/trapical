@@ -174,14 +174,14 @@ def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], 
                 SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
 
 
-def _parseAlleleCalls(config:Config) -> tuple[dict[int,Seq],dict[str,dict[str,int]]]:
+def _parseAlleleCalls(config:Config) -> dict[str,dict[str,int]]:
     """parses pulsenet2.0 allele caller results
 
     Args:
         config (Config): a Config object
 
     Returns:
-        tuple[dict[int,Seq],dict[str,dict[str,int]]]: {key=hash; val=Sequence}, {key=locus; val=dict: key=genome name; val=hash}
+        dict[str,dict[str,int]]: key=locus; val=dict: key=genome name; val=hash
     """
     # messages
     MSG_1 = "importing sequence data"
@@ -206,4 +206,4 @@ def _parseAlleleCalls(config:Config) -> tuple[dict[int,Seq],dict[str,dict[str,in
     config.fnaFiles = __writeFastas(config.fnaDir, core, seqs, config.FORMAT)
     clock.printDone()
     
-    return seqs, core
+    return core

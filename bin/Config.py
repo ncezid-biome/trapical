@@ -162,9 +162,7 @@ class Config():
                     # if forcing, then remove the existing directory
                     elif os.path.isdir(arg) and self.__force:
                         shutil.rmtree(arg)
-                    
-                    # make the directory and save the value
-                    os.mkdir(arg)
+
                     self.fnaDir = arg
                 
                 elif opt in ALN_FLAGS:
@@ -176,8 +174,6 @@ class Config():
                     elif os.path.isdir(arg) and self.__force:
                         shutil.rmtree(arg)
                     
-                    # make the directory and save the value
-                    os.mkdir(arg)
                     self.alnDir = arg
                 
                 elif opt in OUT_FLAGS:
@@ -202,6 +198,11 @@ class Config():
                         self.cpus = int(arg)
                     except ValueError:
                         raise ValueError(f"'{arg}'{ERR_MSG_4}")
-        
+
+            # make sure that an input directory was specified
             if self.pulsenetDir is None:
                 raise BaseException(ERR_MSG_5)
+            
+            # make the alignment and fasta directories
+            os.mkdir(self.fnaDir)
+            os.mkdir(self.alnDir)

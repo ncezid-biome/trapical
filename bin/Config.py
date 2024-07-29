@@ -45,14 +45,34 @@ class Config():
         if not shutil.which(CLUSTALO):
             raise BaseException(f"'{CLUSTALO}'{ERR_MSG}")
     
+    def __checkExistingFile(self, path:str, forceFlag:str) -> None:
+        """checks if a directory exists and removes if forcing
+
+        Args:
+            path (str): the path to check
+            forceFlag (str): the string of the force flag
+
+        Raises:
+            FileExistsError: the directory exists and not forcing
+        """
+        ERR_MSG = f" file already exists; use '{forceFlag}' to overwrite"
+        
+        # if it exists
+        if os.path.exists(path):
+            # remove if forcing otherwise error
+            if self.__force:
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
+            else:
+                raise FileExistsError(f"'{path}'{ERR_MSG}")
+    
     def __parseArgs(self) -> None:
         """parses command line arguments
 
         Raises:
             NotADirectoryError: the input directory does not exist
-            FileExistsError: fasta directory already exists
-            FileExistsError: alignment directory already exists
-            FileExistsError: output file already exists
             PermissionError: cannot write to the output file
             ValueError: cpus specified is not an int
             BaseException: must specify all required arguments
@@ -84,10 +104,9 @@ class Config():
         
         # error messages
         ERR_MSG_1 = "input directory does not exist"
-        ERR_MSG_2 = f" file already exists; use '{FORCE_FLAGS[0]}' to overwrite"
-        ERR_MSG_3 = "cannot write to "
-        ERR_MSG_4 = " is not an integer"
-        ERR_MSG_5 = "must specify a value for '--in'"
+        ERR_MSG_2 = " is not an integer"
+        ERR_MSG_3 = "must specify a value for '--in'"
+        ERR_MSG_4 = "cannot write to "
         
         def printHelp() -> None:
             GAP = " "*4
@@ -155,40 +174,14 @@ class Config():
                 
                 # parse fasta directory
                 elif opt in FNA_FLAGS:
-                    # the directory cannot already exist unless we are forcing
-                    if os.path.isdir(arg) and not self.__force:
-                        raise FileExistsError(f"'{arg}'{ERR_MSG_2}")
-                    
-                    # if forcing, then remove the existing directory
-                    elif os.path.isdir(arg) and self.__force:
-                        shutil.rmtree(arg)
-
                     self.fnaDir = arg
                 
+                # parse the alignment directory
                 elif opt in ALN_FLAGS:
-                    # the directory cannot already exist unless we are forcing
-                    if os.path.isdir(arg) and not self.__force:
-                        raise FileExistsError(f"'{arg}'{ERR_MSG_2}")
-                    
-                    # if forcing, then remove the existing directory
-                    elif os.path.isdir(arg) and self.__force:
-                        shutil.rmtree(arg)
-                    
                     self.alnDir = arg
                 
+                # parse the output file
                 elif opt in OUT_FLAGS:
-                    # the output file cannot already exist unless we are forcing
-                    if os.path.exists(arg) and not self.__force:
-                        raise FileExistsError(f"'{arg}'{ERR_MSG_2}")
-                    
-                    # remove the existing file if we are forcing
-                    if os.path.exists(arg) and self.__force:
-                        os.remove(arg)
-                    
-                    # make sure the file can be written
-                    if not os.access(arg, os.W_OK):
-                        raise PermissionError(f"{ERR_MSG_3}'{arg}'")
-                    
                     # save the value
                     self.outFn = arg
                 
@@ -197,11 +190,20 @@ class Config():
                     try:
                         self.cpus = int(arg)
                     except ValueError:
-                        raise ValueError(f"'{arg}'{ERR_MSG_4}")
+                        raise ValueError(f"'{arg}'{ERR_MSG_2}")
 
             # make sure that an input directory was specified
             if self.pulsenetDir is None:
-                raise BaseException(ERR_MSG_5)
+                raise BaseException(ERR_MSG_3)
+            
+            # handle existing directories and files
+            self.__checkExistingFile(self.fnaDir, FORCE_FLAGS[0])
+            self.__checkExistingFile(self.alnDir, FORCE_FLAGS[0])
+            self.__checkExistingFile(self.outFn, FORCE_FLAGS[0])
+            
+            # make sure output directory has write permissions
+            if not os.access(os.path.dirname(self.outFn), os.W_OK):
+                raise PermissionError(f"{ERR_MSG_4}'{self.outFn}'")
             
             # make the alignment and fasta directories
             os.mkdir(self.fnaDir)

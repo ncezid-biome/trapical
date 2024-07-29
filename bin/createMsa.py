@@ -121,9 +121,12 @@ def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> dict[int,Seq]:
     out = dict()
     rec:SeqRecord
     
+    # create argument list
+    args = [(f, frmt) for f in alns]
+    
     # get the variable positions in parallel
     pool = multiprocessing.Pool(cpus)
-    results = pool.map(__getVariableSitesForOneLocus, alns)
+    results = pool.starmap(__getVariableSitesForOneLocus, args)
     pool.close()
     pool.join()
     

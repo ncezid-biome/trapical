@@ -31,19 +31,35 @@ def __alignOneSequence(fna:str, alnDir:str) -> str:
     return aln
 
 
-def __alignAllSequences(fnas:list[str], cpus:int) -> list[str]:
+def __alignAllSequences(fnas:list[str], alnDir:str, cpus:int) -> list[str]:
+    """aligns all the sequences in parallel
+
+    Args:
+        fnas (list[str]): a list of fasta files to align
+        alnDir (str): the directory where alignments will be saved
+        cpus (int): the number of cpus to use for parallel processing
+
+    Raises:
+        ChildProcessError: a call to clustalo failed
+
+    Returns:
+        list[str]: a list of alignment files
+    """
     # message
     ERR_MSG = 'one or more calls to clustalo failed'
     
+    # build the argument list
+    args = [(fn, alnDir) for fn in fnas]
+    
     # align sequences in parallel
     pool = multiprocessing.Pool(cpus)
-    out = pool.map(__alignOneSequence, fnas)
+    out = pool.starmap(__alignOneSequence, args)
     pool.close()
     pool.join()
     
     # make sure everything worked
     if len(out) != len(fnas):
-        raise RuntimeError(ERR_MSG)
+        raise ChildProcessError(ERR_MSG)
     
     return out
 

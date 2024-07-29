@@ -205,6 +205,9 @@ class Config():
             if not os.access(os.path.dirname(self.outFn), os.W_OK):
                 raise PermissionError(f"{ERR_MSG_4}'{self.outFn}'")
             
-            # make the alignment and fasta directories
+            # make the fasta directory
             os.mkdir(self.fnaDir)
-            os.mkdir(self.alnDir)
+            
+            # make the alignment directory (if it isn't the same as the fasta directory)
+            if os.path.abspath(self.alnDir) != os.path.abspath(self.fnaDir):
+                os.mkdir(self.alnDir)

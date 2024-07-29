@@ -149,7 +149,7 @@ def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], 
         outdir (str): the output directory where fasta files will be written
         core (dict[str,dict[str,int]]): the dictionary produced by __importCoreAlleles
         seqs (dict[int,Seq]): the dictionary produced by __importSequences
-        frmt
+        frmt (str): the sequence file format to write
     """
     # constants
     EXT = ".fna"
@@ -159,15 +159,20 @@ def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], 
     
     # for each locus
     for locus in core.keys():
-        # create the new filename and save it
-        fn = os.path.join(outdir, locus + EXT)
-        out.append(fn)
+        # get the hashes
+        hashes = {x for x in core[locus].values()}
         
-        # open the file
-        with open(fn, 'a') as fh:
-            # write each unique allele to the file
-            for uid in {x for x in core[locus].values()}:
-                SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
+        # only make a fasta if there are multiple alleles to align
+        if len(hashes) > 1:
+            # create the new filename and save it
+            fn = os.path.join(outdir, locus + EXT)
+            out.append(fn)
+            
+            # open the file
+            with open(fn, 'a') as fh:
+                # write each unique allele to the file
+                for uid in hashes:
+                    SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
     
     return out
 

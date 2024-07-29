@@ -1,5 +1,32 @@
 # trapical: <ins>t</ins>rapical <ins>r</ins>apidly <ins>a</ins>ligns <ins>P</ins>ulsenet <ins>al</ins>leles
 
+## installation
+Run the following commands to install `trapical`
+
+```bash
+git clone https://github.com/ncezid-biome/trapical.git
+conda env create -f trapical/environment.yml
+conda activate trapical
+```
+
+## usage
+```text
+usage:
+    python3 trapical.py [-ifaonvh]
+
+required arguments:
+    -i, --in            [directory] the directory containing the Pulsenet2.0 WGMLST results
+
+optional arguments:
+    -f, --fna_dir       [directory] the directory where locus fasta files should be written (default: ./loci_fastas)
+    -a, --aln_dir       [directory] the directory where aligned locus files should be written (default: ./loci_alignments)
+    -o, --out           [file] the name of the output file (default: ./msa.aln)
+    -n, --num_threads   [int] the number of processors for parallel processing (default: 1)
+    -v, --version       prints the version
+    -h, --help          prints this meessage
+    --force             if specified, overwrite existing files and directories
+```
+
 ## Notices
 
 ### Public Domain Notice

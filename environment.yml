@@ -1,0 +1,15 @@
+# Joseph S. Wirth, 2024
+## provides a conda environment for running primerForge
+## commands:
+##        $ conda env create -f environment.yml
+##        $ conda activate trapical
+
+name: trapical
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.9
+  - biopython>=1.81
+  - clustalo

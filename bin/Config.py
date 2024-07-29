@@ -31,6 +31,20 @@ class Config():
         # parse the commandline arguments
         self.__parseArgs()
     
+    def __checkForClustalo() -> None:
+        """checks that clustalo is installed and in the path
+
+        Raises:
+            BaseException: clustalo is not installed properly
+        """
+        # constant
+        CLUSTALO = "clustalo"
+        ERR_MSG = ' is not installed or not in the PATH'
+        
+        # make sure that isPcr is in the path
+        if not shutil.which(CLUSTALO):
+            raise BaseException(f"'{CLUSTALO}'{ERR_MSG}")
+    
     def __parseArgs(self) -> None:
         """parses command line arguments
 
@@ -121,6 +135,9 @@ class Config():
         
         # parse command line arguments
         else:
+            # make sure clustalo is installed
+            Config.__checkForClustalo()
+            
             # determine if we are forcing
             if FORCE_FLAGS[0] in sys.argv:
                 self.__force = True

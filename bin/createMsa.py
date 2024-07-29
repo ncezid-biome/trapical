@@ -28,7 +28,7 @@ def __alignOneSequence(fna:str, alnDir:str) -> str:
     ERR_MSG = 'clustalo failed'
     
     # create the alignment filename
-    aln = os.path.join(alnDir, os.path.splitext(fna)[0] + EXT)
+    aln = os.path.join(alnDir, os.path.splitext(os.path.basename(fna))[0] + EXT)
     
     # build the command
     cmd = [CMD, IN, fna, OUT, aln]

@@ -1,6 +1,4 @@
-# template
-
-The purpose of this repository is to serve as a nice template to align with the values in DFWED.
+# trapical: <ins>t</ins>rapical <ins>r</ins>apidly <ins>a</ins>ligns <ins>P</ins>ulsenet <ins>al</ins>leles
 
 ## Notices
 

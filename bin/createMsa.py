@@ -143,10 +143,6 @@ def __writeVariableSites(fn:str, core:dict[str,list[int]], sites:dict[int,Seq], 
         sites (dict[int,Seq]): the dictionary produced by _getAllVariableSites
         frmt (str): the output sequence format
     """
-    # remove the file if it already exists
-    if os.path.exists(fn):
-        os.remove(fn)
-    
     # open the file in append mode
     with open(fn, 'a') as fh:
         # for each genome name
@@ -158,18 +154,25 @@ def __writeVariableSites(fn:str, core:dict[str,list[int]], sites:dict[int,Seq], 
             SeqIO.write(SeqRecord(seq, name, '', ''), fh, frmt)
 
 
-def _createMsa(config:Config, seqs:dict[int,Seq], core:dict[str,dict[str,int]]) -> None:
+def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
+    """creates a multiple sequence alignment
+
+    Args:
+        config (Config): a Config object
+        core (dict[str,dict[str,int]]): key=locus; val=dict: key=genome name; val=hash
+    """
     # messages
     MSG_1 = 'aligning sequences'
     MSG_2 = 'determining variable sites'
-    MSG_3 = 'writing variable sites to file'
+    MSG_3A = 'writing alignment to file ('
+    MSG_3B = ' characters per isolate)'
     
     # initialize clock
     clock = Clock()
     
     # align sequences
     clock.printStart(MSG_1)
-    config.alnFiles = __alignAllSequences()
+    config.alnFiles = __alignAllSequences(config.fnaFiles, config.cpus)
     clock.printDone()
     
     # get the variable sites for each locus
@@ -178,7 +181,7 @@ def _createMsa(config:Config, seqs:dict[int,Seq], core:dict[str,dict[str,int]]) 
     clock.printDone()
     
     # write results to file
-    clock.printStart(MSG_3)
+    clock.printStart(f'{MSG_3A}{sum(map(len, sites.values()))}{MSG_3B}')
     core = __restructureCore(core)
     __writeVariableSites(config.outFn, core, sites, config.FORMAT)
     clock.printDone()

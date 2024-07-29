@@ -163,15 +163,13 @@ def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], 
         fn = os.path.join(outdir, locus + EXT)
         out.append(fn)
         
-        # remove the file if it exists
-        if os.path.exists(fn):
-            os.remove(fn)
-        
         # open the file
         with open(fn, 'a') as fh:
             # write each unique allele to the file
             for uid in {x for x in core[locus].values()}:
                 SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
+    
+    return out
 
 
 def _parseAlleleCalls(config:Config) -> dict[str,dict[str,int]]:

@@ -7,6 +7,18 @@ import multiprocessing, os, subprocess
 
 
 def __alignOneSequence(fna:str, alnDir:str) -> str:
+    """uses clustalo to align one sequence
+
+    Args:
+        fna (str): the fasta file to
+        alnDir (str): the directory where the fasta file will be saved
+
+    Raises:
+        subprocess.CalledProcessError: error if clustalo fails
+
+    Returns:
+        str: the filename of the aligned file
+    """
     # constants
     CMD = 'clustalo'
     IN  = '--in'
@@ -188,7 +200,7 @@ def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
     
     # align sequences
     clock.printStart(MSG_1)
-    config.alnFiles = __alignAllSequences(config.fnaFiles, config.cpus)
+    config.alnFiles = __alignAllSequences(config.fnaFiles, config.alnDir, config.cpus)
     clock.printDone()
     
     # get the variable sites for each locus

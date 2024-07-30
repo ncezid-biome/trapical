@@ -27,6 +27,35 @@ optional arguments:
     --force             if specified, overwrite existing files and directories
 ```
 
+## workflow
+```mermaid
+flowchart TB
+    %% variables
+    input(["Pulsenet2.0 wgMLST results directory"])
+    import1["import allele sequences"]
+    import2["import core allele hashes"]
+    write1[/"write a fasta for each
+            core locus with >1 allele"/]
+    align[/"align each fasta
+           with clustalo"/]
+    extract["extract variable sites
+             from each alignment"]
+    concat["concatenate variable
+            sites for each isolate"]
+    write2[/"write concatenated
+             alignment to file"/]
+    
+    %% workflow
+    input --> import1
+    input --> import2
+    import1 --> write1
+    import2 --> write1
+    write1 --> align
+    align --> extract
+    extract --> concat
+    concat --> write2
+```
+
 ## Notices
 
 ### Public Domain Notice

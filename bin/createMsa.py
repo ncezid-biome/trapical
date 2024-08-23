@@ -1,6 +1,7 @@
 from Bio import SeqIO
 from Bio.Seq import Seq
 from bin.Clock import Clock
+from typing import Generator
 from bin.Config import Config
 from Bio.SeqRecord import SeqRecord
 import multiprocessing, os, subprocess
@@ -60,12 +61,14 @@ def __alignAllSequences(fnas:list[str], alnDir:str, cpus:int) -> list[str]:
     # message
     ERR_MSG = 'one or more calls to clustalo failed'
     
-    # build the argument list
-    args = [(fn, alnDir) for fn in fnas]
+    # generator to get arguments
+    def genArgs() -> Generator[tuple[str,str],None,None]:
+        for fn in fnas:
+            yield (fn, alnDir)
     
     # align sequences in parallel
     pool = multiprocessing.Pool(cpus)
-    out = pool.starmap(__alignOneSequence, args)
+    out = pool.starmap(__alignOneSequence, genArgs())
     pool.close()
     pool.join()
     

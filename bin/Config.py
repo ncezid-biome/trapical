@@ -174,16 +174,16 @@ class Config():
                 
                 # parse fasta directory
                 elif opt in FNA_FLAGS:
-                    self.fnaDir = arg
+                    self.fnaDir = os.path.abspath(arg)
                 
                 # parse the alignment directory
                 elif opt in ALN_FLAGS:
-                    self.alnDir = arg
+                    self.alnDir = os.path.abspath(arg)
                 
                 # parse the output file
                 elif opt in OUT_FLAGS:
                     # save the value
-                    self.outFn = arg
+                    self.outFn = os.path.abspath(arg)
                 
                 # parse the number of cpus
                 elif opt in CPUS_FLAGS:

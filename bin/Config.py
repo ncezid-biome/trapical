@@ -25,6 +25,7 @@ class Config():
         # type hint variables that will be populated during runtime
         self.fnaFiles:list[str]
         self.alnFiles:list[str]
+        self.conservedCounts:dict[str,dict[str,int]]
         
         # import version and author
         self.__version:str = version

@@ -28,7 +28,7 @@ def __parseOneJson(fn:str) -> dict[int,Seq]:
         for call in val:
             # get the id and sequence
             id = call['id']
-            seq = Seq(call['seq'])
+            seq = Seq(call['seq']).upper()
 
             # save them in the dictionary
             out[id] = seq

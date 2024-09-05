@@ -128,7 +128,10 @@ def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> tuple[dict[int,
         cpus (int): the number of cpus for parallel processing
 
     Returns:
-        tuple[dict[int,Seq],dict[str,int]]: (key=allele hash code; val=sequence); (key=aln file; val=dict: key=character; val=num conserved)
+        tuple[
+            dict[int,Seq]: key=allele hash code; val=sequence
+            dict[str,dict[str,int]]: key=aln file; val=dict: key=character; val=num conserved
+        ]
     """
     # initialize variables
     variableAlignment = dict()
@@ -273,10 +276,14 @@ def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
     config.alnFiles = __alignAllSequences(config.fnaFiles, config.alnDir, config.cpus)
     clock.printDone()
     
-    # get the variable sites for each locus
+    # get the variable sites and conserved character counts for each locus
     clock.printStart(MSG_2)
     sites,counts = __getAllVariableSites(config.alnFiles, config.FORMAT, config.cpus)
     clock.printDone()
+    
+    # store the conserved character counts
+    config.conservedCounts.update(counts)
+    del counts
     
     # write multiple sequence alignment to file
     clock.printStart(f'{MSG_3A}{sum(map(len, sites.values()))}{MSG_3B}')
@@ -286,6 +293,5 @@ def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
     
     # write character counts to file
     clock.printStart(MSG_4)
-    __writeConservedCounts(config.countFn, counts)
+    __writeConservedCounts(config.countFn, config.conservedCounts)
     clock.printDone()
-    

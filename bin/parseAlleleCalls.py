@@ -142,7 +142,7 @@ def __importCoreAlleles(directory:str, cpus:int) -> dict[str,dict[str,int]]:
     return {k:v for k,v in out.items() if len(v) == len(files)}
 
 
-def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], frmt:str) -> list[str]:
+def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], frmt:str) -> tuple[list[str],dict[str,dict[str,int]]]:
     """writes a fasta file for each locus in the core genes
 
     Args:
@@ -150,34 +150,55 @@ def __writeFastas(outdir:str, core:dict[str,dict[str,int]], seqs:dict[int,Seq], 
         core (dict[str,dict[str,int]]): the dictionary produced by __importCoreAlleles
         seqs (dict[int,Seq]): the dictionary produced by __importSequences
         frmt (str): the sequence file format to write
+    
+    Returns:
+        tuple[
+            list[str]:                a list of fasta files for each locus with >1 allele
+            dict[str,dict[str,int]]:  key=filename; val=dict: key=character; val=count
+        ]
     """
     # constants
     EXT = ".fna"
     
-    # initialize output
-    out = list()
+    # initialize variables
+    fastasToAlign = list()
+    conservedCounts = dict()
     
     # for each locus
     for locus in core.keys():
         # get the hashes
         hashes = {x for x in core[locus].values()}
         
-        # only make a fasta if there are multiple alleles to align
+        # create the new filename
+        fn = os.path.join(outdir, locus + EXT)
+        
+        # only add a fasta to the list if there are multiple alleles to align
         if len(hashes) > 1:
-            # create the new filename and save it
-            fn = os.path.join(outdir, locus + EXT)
-            out.append(fn)
+            fastasToAlign.append(fn)
+        
+        # count the conserved characters for loci with only one allele
+        else:
+            # initialize the entry for this file
+            conservedCounts[fn] = dict()
             
-            # open the file
-            with open(fn, 'a') as fh:
-                # write each unique allele to the file
-                for uid in hashes:
-                    SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
-    
-    return out
+            # for each allele
+            for uid in hashes:
+                # get all the unique characters
+                chars = {str(x) for x in seqs[uid]}
+                
+                # save the counts for this file
+                conservedCounts[fn] = {c:seqs[uid].count(c) for c in chars}
+        
+        # write the fasta for this locus
+        with open(fn, 'a') as fh:
+            # write each unique allele to the file
+            for uid in hashes:
+                SeqIO.write(SeqRecord(seqs[uid], str(uid), '', ''), fh, frmt)
+
+    return fastasToAlign, conservedCounts
 
 
-def _parseAlleleCalls(config:Config) -> dict[str,dict[str,int]]:
+def _parseAlleleCalls(config:Config) -> tuple[dict[str,dict[str,int]],dict[str,dict[str,int]]]:
     """parses pulsenet2.0 allele caller results
 
     Args:
@@ -185,6 +206,7 @@ def _parseAlleleCalls(config:Config) -> dict[str,dict[str,int]]:
 
     Returns:
         dict[str,dict[str,int]]: key=locus; val=dict: key=genome name; val=hash
+        dict[str,dict[str,int]]: key=filename; val=dict: key=character; val=count
     """
     # messages
     MSG_1 = "importing sequence data"
@@ -206,7 +228,7 @@ def _parseAlleleCalls(config:Config) -> dict[str,dict[str,int]]:
     
     # write all the fastas to file
     clock.printStart(MSG_3)
-    config.fnaFiles = __writeFastas(config.fnaDir, core, seqs, config.FORMAT)
+    config.fnaFiles, config.conservedCounts = __writeFastas(config.fnaDir, core, seqs, config.FORMAT)
     clock.printDone()
     
     return core

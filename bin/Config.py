@@ -7,6 +7,7 @@ class Config():
     __DEF_ALN_DIR = "loci_alignments"
     __DEF_CPUS = 1
     __DEF_OUTFN = "msa.aln"
+    __DEF_COUNT = "conserved_counts.csv"
     __DEF_FORCE = False
     __DEF_HELP = False
     
@@ -16,6 +17,7 @@ class Config():
         self.fnaDir:str
         self.alnDir:str
         self.outFn:str
+        self.countFn:str
         self.cpus:int
         self.helpRequested:bool
         self.__force:bool
@@ -82,6 +84,7 @@ class Config():
         FNA_FLAGS = ('-f', '--fna_dir')
         ALN_FLAGS = ('-a', '--aln_dir')
         OUT_FLAGS = ('-o', '--out')
+        COUNT_FLAGS = ('-c', '--count')
         CPUS_FLAGS = ('-n', '--num_threads')
         FORCE_FLAGS = ('--force',)
         VERS_FLAGS = ('-v', '--version')
@@ -90,6 +93,7 @@ class Config():
                      FNA_FLAGS[0][-1] + ':' + \
                      ALN_FLAGS[0][-1] + ':' + \
                      OUT_FLAGS[0][-1] + ':' + \
+                     COUNT_FLAGS[0][-1] + ':' + \
                      CPUS_FLAGS[0][-1] + ':' + \
                      VERS_FLAGS[0][-1] + \
                      HELP_FLAGS[0][-1]
@@ -97,6 +101,7 @@ class Config():
                      FNA_FLAGS[1][2:] + '=',
                      ALN_FLAGS[1][2:] + '=',
                      OUT_FLAGS[1][2:] + '=',
+                     COUNT_FLAGS[1][2:] + '=',
                      CPUS_FLAGS[1][2:] + '=',
                      FORCE_FLAGS[0][2:],
                      VERS_FLAGS[1][2:],
@@ -125,7 +130,8 @@ class Config():
                        f"optional arguments:{EOL}" + \
                        f"{GAP}{SEP.join(FNA_FLAGS):<{WIDTH}}[directory] the directory where locus fasta files should be written{DEF_OPEN}{self.fnaDir}{CLOSE}{EOL}" + \
                        f"{GAP}{SEP.join(ALN_FLAGS):<{WIDTH}}[directory] the directory where aligned locus files should be written{DEF_OPEN}{self.alnDir}{CLOSE}{EOL}" + \
-                       f"{GAP}{SEP.join(OUT_FLAGS):<{WIDTH}}[file] the name of the output file{DEF_OPEN}{self.outFn}{CLOSE}{EOL}" + \
+                       f"{GAP}{SEP.join(OUT_FLAGS):<{WIDTH}}[file] the name of the output alignment file{DEF_OPEN}{self.outFn}{CLOSE}{EOL}" + \
+                       f"{GAP}{SEP.join(COUNT_FLAGS):<{WIDTH}}[file] the name of the file for conserved character counts{DEF_OPEN}{self.countFn}{CLOSE}{EOL}" + \
                        f"{GAP}{SEP.join(CPUS_FLAGS):<{WIDTH}}[int] the number of processors for parallel processing{DEF_OPEN}{Config.__DEF_CPUS}{CLOSE}{EOL}" + \
                        f"{GAP}{SEP.join(VERS_FLAGS):<{WIDTH}}prints the version{EOL}" + \
                        f"{GAP}{SEP.join(HELP_FLAGS):<{WIDTH}}prints this meessage{EOL}" + \
@@ -140,6 +146,7 @@ class Config():
         self.alnDir = os.path.join(os.curdir, Config.__DEF_ALN_DIR)
         self.cpus = Config.__DEF_CPUS
         self.outFn = os.path.join(os.curdir, Config.__DEF_OUTFN)
+        self.countFn = os.path.join(os.curdir, Config.__DEF_COUNT)
         self.__force = Config.__DEF_FORCE
         
         # print help if requested
@@ -185,6 +192,11 @@ class Config():
                     # save the value
                     self.outFn = os.path.abspath(arg)
                 
+                # parse the count file
+                elif opt in COUNT_FLAGS:
+                    # save the value
+                    self.countFn = os.path.abspath(arg)
+                
                 # parse the number of cpus
                 elif opt in CPUS_FLAGS:
                     try:
@@ -200,6 +212,7 @@ class Config():
             self.__checkExistingFile(self.fnaDir, FORCE_FLAGS[0])
             self.__checkExistingFile(self.alnDir, FORCE_FLAGS[0])
             self.__checkExistingFile(self.outFn, FORCE_FLAGS[0])
+            self.__checkExistingFile(self.countFn, FORCE_FLAGS[0])
             
             # make sure output directory has write permissions
             if not os.access(os.path.dirname(self.outFn), os.W_OK):

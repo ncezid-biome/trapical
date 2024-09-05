@@ -79,7 +79,7 @@ def __alignAllSequences(fnas:list[str], alnDir:str, cpus:int) -> list[str]:
     return out
 
 
-def __getVariableSitesForOneLocus(fn:str, frmt:str) -> tuple[str,list[int]]:
+def __getVariableSitesForOneLocus(fn:str, frmt:str) -> tuple[str,list[int],dict[str,int]]:
     """gets a list of the sites in an aligned file that are variable
 
     Args:
@@ -87,30 +87,40 @@ def __getVariableSitesForOneLocus(fn:str, frmt:str) -> tuple[str,list[int]]:
         frmt (str): the sequence format
 
     Returns:
-        tuple[str,list[int]]: the filename, a list of indices of the string
+        tuple[str,list[int],dict[str,int]]: the filename; a list of indices of the string; the conserved character counts
     """
     # initialize variables
-    out = list()
+    variableSites = list()
+    conservedCounts = dict()
     
     # load all the sequence data into memory
     seqs = [rec.seq for rec in SeqIO.parse(fn, frmt)]
     
     # for each position in the alignment
     for position in range(len(seqs[0])):
+        # reset the boolean
+        constant = True
+        
         # get the character for the first sequence
-        char = seqs[0][position]
+        char = str(seqs[0][position])
         
         # for each other sequence
         for idx in range(1, len(seqs)):
             # save the position if the character is different; stop looping
             if seqs[idx][position] != char:
-                out.append(position)
+                variableSites.append(position)
+                constant = False
                 break
+        
+        # update the counts for constant sites
+        if constant:
+            conservedCounts[char] = conservedCounts.get(char, 0)
+            conservedCounts[char] += 1
 
-    return fn, out
-    
+    return fn, variableSites, conservedCounts
 
-def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> dict[int,Seq]:
+
+def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> tuple[dict[int,Seq],dict[str,dict[str,int]]]:
     """gets all the variable sites for each locus in parallel
 
     Args:
@@ -118,10 +128,11 @@ def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> dict[int,Seq]:
         cpus (int): the number of cpus for parallel processing
 
     Returns:
-        dict[int,Seq]: key=allele hash code; val=sequence
+        tuple[dict[int,Seq],dict[str,int]]: (key=allele hash code; val=sequence); (key=aln file; val=dict: key=character; val=num conserved)
     """
     # initialize variables
-    out = dict()
+    variableAlignment = dict()
+    conservedCounts = dict()
     rec:SeqRecord
     
     # create argument list
@@ -133,12 +144,18 @@ def __getAllVariableSites(alns:list[str], frmt:str, cpus:int) -> dict[int,Seq]:
     pool.close()
     pool.join()
     
-    # use the variable positions to extract the sequences
-    for fn,sites in results:
+    for fn,sites,counts in results:
+        # count the number conserved bases
+        conservedCounts[fn] = dict()
+        for char,num in counts.items():
+            conservedCounts[fn][char] = conservedCounts[fn].get(char, 0)
+            conservedCounts[fn][char] += num
+        
+        # use the variable positions to extract the sequences
         for rec in SeqIO.parse(fn, frmt):
-            out[int(rec.id)] = Seq('').join([rec.seq[x] for x in sites])
+            variableAlignment[int(rec.id)] = Seq('').join([rec.seq[x] for x in sites])
     
-    return out
+    return variableAlignment, conservedCounts
 
 
 def __restructureCore(core:dict[str,dict[str,int]]) -> dict[str,list[int]]:
@@ -188,6 +205,52 @@ def __writeVariableSites(fn:str, core:dict[str,list[int]], sites:dict[int,Seq], 
             SeqIO.write(SeqRecord(seq, name, '', ''), fh, frmt)
 
 
+def __writeConservedCounts(fn:str, counts:dict[str,dict[str,int]]) -> None:
+    """writes the conserved character counts to file
+
+    Args:
+        fn (str): the filename where data will be written
+        counts (dict[str,dict[str,int]]): key=alignment filename; val=dict: key=character; val=count
+    """
+    # constants
+    SEP = ","
+    EOL = "\n"
+    SUM = "total"
+    HEADER_PREFIX = ['file']
+    
+    # determine all the characters and fix the order
+    chars = sorted({c for f in counts.keys() for c in counts[f]})
+    header = HEADER_PREFIX + chars
+    
+    # initialize variable to track total char counts
+    totals = {c:0 for c in chars}
+    
+    with open(fn, 'w') as fh:
+        # write the header to file
+        fh.write(SEP.join(header) + EOL)
+        
+        # for each alignment file
+        for fn in counts.keys():
+            # write the filename in the first column
+            fh.write(fn)
+            
+            # write the counts for each character in order
+            for char in chars:
+                totals[char] += counts[fn][char]
+                fh.write(SEP + str(counts[fn][char]))
+            
+            # rows end in a new line
+            fh.write(EOL)
+        
+        # write the total counts to file
+        fh.write(SUM)
+        for char in chars:
+            fh.write(SEP + str(totals[char]))
+        
+        # file ends in a new line
+        fh.write(EOL)
+
+
 def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
     """creates a multiple sequence alignment
 
@@ -196,10 +259,11 @@ def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
         core (dict[str,dict[str,int]]): key=locus; val=dict: key=genome name; val=hash
     """
     # messages
-    MSG_1 = 'aligning sequences'
-    MSG_2 = 'determining variable sites'
+    MSG_1  = 'aligning sequences'
+    MSG_2  = 'determining variable sites'
     MSG_3A = 'writing alignment to file ('
     MSG_3B = ' characters per isolate)'
+    MSG_4  = 'writing conserved character counts to file'
     
     # initialize clock
     clock = Clock()
@@ -211,11 +275,17 @@ def _createMsa(config:Config, core:dict[str,dict[str,int]]) -> None:
     
     # get the variable sites for each locus
     clock.printStart(MSG_2)
-    sites = __getAllVariableSites(config.alnFiles, config.FORMAT, config.cpus)
+    sites,counts = __getAllVariableSites(config.alnFiles, config.FORMAT, config.cpus)
     clock.printDone()
     
-    # write results to file
+    # write multiple sequence alignment to file
     clock.printStart(f'{MSG_3A}{sum(map(len, sites.values()))}{MSG_3B}')
     core = __restructureCore(core)
     __writeVariableSites(config.outFn, core, sites, config.FORMAT)
     clock.printDone()
+    
+    # write character counts to file
+    clock.printStart(MSG_4)
+    __writeConservedCounts(config.countFn, counts)
+    clock.printDone()
+    

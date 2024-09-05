@@ -5,7 +5,7 @@ from bin.parseAlleleCalls import _parseAlleleCalls
 
 
 __author__ = "Joseph S. Wirth"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 
 def _main() -> None:

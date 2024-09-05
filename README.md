@@ -12,7 +12,7 @@ conda activate trapical
 ## usage
 ```text
 usage:
-    python3 trapical.py [-ifaonvh]
+    python3 trapical.py [-ifaocnvh]
 
 required arguments:
     -i, --in            [directory] the directory containing the Pulsenet2.0 WGMLST results
@@ -20,7 +20,8 @@ required arguments:
 optional arguments:
     -f, --fna_dir       [directory] the directory where locus fasta files should be written (default: ./loci_fastas)
     -a, --aln_dir       [directory] the directory where aligned locus files should be written (default: ./loci_alignments)
-    -o, --out           [file] the name of the output file (default: ./msa.aln)
+    -o, --out           [file] the name of the output alignment file (default: ./msa.aln)
+    -c, --count         [file] the name of the file for conserved character counts (default: ./conserved_counts.csv)
     -n, --num_threads   [int] the number of processors for parallel processing (default: 1)
     -v, --version       prints the version
     -h, --help          prints this meessage
@@ -34,26 +35,36 @@ flowchart TB
     input(["Pulsenet2.0 wgMLST results directory"])
     import1["import allele sequences"]
     import2["import core allele hashes"]
-    write1[/"write a fasta for each
-            core locus with >1 allele"/]
-    align[/"align each fasta
-           with clustalo"/]
+    count1["count conserved characters
+            in loci with one allele"]
+    write1[/"write a fasta for
+             each core locus"/]
+    align["align fastas with >1
+           allele with clustalo"]
     extract["extract variable sites
              from each alignment"]
     concat["concatenate variable
             sites for each isolate"]
+    count2["count conserved characters
+           in each alignment"]
     write2[/"write concatenated
              alignment to file"/]
+    write3[/"write conserved 
+            character counts to file"/]
     
     %% workflow
     input --> import1
     input --> import2
     import1 --> write1
     import2 --> write1
+    import1 --> count1
     write1 --> align
     align --> extract
+    align --> count2
     extract --> concat
     concat --> write2
+    count1 --> write3
+    count2 --> write3
 ```
 
 ## Notices
